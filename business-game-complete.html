@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Board Game</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Playfair+Display:wght@700;900&family=Raleway:wght@400;600;700&display=swap');
+
+:root {
+  --gold: #D4AF37;
+  --dark: #0d0d0d;
+  --card-bg: rgba(255,255,255,0.07);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  min-height:100vh;
+  font-family:'Raleway',sans-serif;
+  overflow-x:hidden;
+  background:#0a0a1a;
+}
+
+/* ===================== SCREENS ===================== */
+.screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+.screen.active { display:flex; }
+
+/* ===================== GAME SELECT SCREEN ===================== */
+#screen-select {
+  background: radial-gradient(ellipse at center, #1a1035 0%, #0a0a1a 100%);
+  position:relative; overflow:hidden;
+}
+#screen-select::before {
+  content:''; position:absolute; inset:0;
+  background-image: radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,0.3) 0%, transparent 100%);
+  pointer-events:none;
+}
+
+.select-title {
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(1.3rem,5vw,2.2rem);
+  color:var(--gold);
+  text-shadow:0 0 30px rgba(212,175,55,0.5);
+  text-align:center; margin-bottom:6px;
+}
+.select-sub { color:#aaa; font-size:0.85rem; letter-spacing:3px; margin-bottom:32px; text-align:center; }
+
+.game-cards {
+  display:flex; flex-wrap:wrap; gap:18px; justify-content:center; max-width:860px;
+}
+
+.game-card {
+  background:var(--card-bg);
+  border:2px solid rgba(255,255,255,0.12);
+  border-radius:16px; padding:22px 20px;
+  width:250px; cursor:pointer;
+  transition:all 0.3s ease; text-align:center;
+  backdrop-filter:blur(10px); position:relative; overflow:hidden;
+}
+.game-card::before {
+  content:''; position:absolute; inset:0; opacity:0;
+  transition:opacity 0.3s; border-radius:14px;
+}
+.game-card:hover { transform:translateY(-6px); border-color:rgba(255,255,255,0.4); }
+.game-card.mh::before { background:linear-gradient(135deg,rgba(255,153,51,0.2),rgba(19,136,8,0.2)); }
+.game-card.in::before { background:linear-gradient(135deg,rgba(255,102,0,0.2),rgba(19,136,8,0.15)); }
+.game-card.wl::before { background:linear-gradient(135deg,rgba(65,105,225,0.2),rgba(46,139,87,0.15)); }
+.game-card:hover::before { opacity:1; }
+
+.game-card .card-icon { font-size:2.8rem; margin-bottom:10px; }
+.game-card .card-title { font-family:'Cinzel Decorative',serif; font-size:1rem; color:#fff; margin-bottom:6px; }
+.game-card .card-desc { font-size:0.72rem; color:#aac; line-height:1.5; }
+.game-card .card-props { margin-top:10px; font-size:0.65rem; color:var(--gold); }
+
+/* ===================== SETUP SCREEN ===================== */
+#screen-setup {
+  background:var(--setup-bg, #0a1628);
+  transition:background 0.5s;
+}
+
+.setup-box {
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(16px);
+  border:2px solid rgba(255,255,255,0.15);
+  border-radius:20px;
+  padding:32px 28px;
+  max-width:520px; width:100%;
+  text-align:center;
+}
+
+.setup-title {
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(1.1rem,4vw,1.6rem);
+  color:var(--gold);
+  margin-bottom:4px;
+}
+.setup-subtitle { color:#aac; font-size:0.8rem; letter-spacing:2px; margin-bottom:28px; }
+
+.section-label {
+  color:#ccc; font-size:0.78rem; letter-spacing:2px;
+  text-transform:uppercase; margin-bottom:12px; text-align:left;
+}
+
+/* Player count selector */
+.player-count-row {
+  display:flex; gap:10px; justify-content:center; margin-bottom:28px; flex-wrap:wrap;
+}
+
+.player-btn {
+  width:60px; height:60px; border-radius:14px;
+  border:2px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.06);
+  color:#fff; font-size:1.3rem; font-weight:700;
+  cursor:pointer; transition:all 0.2s;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  font-family:'Raleway',sans-serif;
+}
+.player-btn span { font-size:0.48rem; color:#aaa; letter-spacing:1px; }
+.player-btn:hover { border-color:var(--gold); transform:scale(1.05); }
+.player-btn.selected { background:var(--gold); color:#000; border-color:var(--gold); box-shadow:0 0 18px rgba(212,175,55,0.5); }
+.player-btn.selected span { color:#333; }
+
+/* Player name inputs */
+.player-names { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+
+.player-name-row {
+  display:flex; align-items:center; gap:10px;
+}
+.player-token { font-size:1.3rem; width:36px; text-align:center; flex-shrink:0; }
+.player-name-input {
+  flex:1; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.2);
+  border-radius:10px; padding:9px 14px; color:#fff; font-size:0.85rem;
+  font-family:'Raleway',sans-serif; outline:none; transition:border-color 0.2s;
+}
+.player-name-input:focus { border-color:var(--gold); }
+.player-name-input::placeholder { color:#888; }
+
+/* Color pick */
+.color-row { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:26px; }
+.color-dot {
+  width:28px; height:28px; border-radius:50%; cursor:pointer;
+  border:3px solid transparent; transition:all 0.2s;
+}
+.color-dot.selected { border-color:#fff; transform:scale(1.25); box-shadow:0 0 10px rgba(255,255,255,0.4); }
+
+.start-btn {
+  width:100%; padding:14px; border-radius:12px;
+  background:linear-gradient(135deg,var(--gold),#b8860b);
+  color:#000; font-size:1rem; font-weight:700;
+  font-family:'Cinzel Decorative',serif;
+  border:none; cursor:pointer; letter-spacing:2px;
+  transition:all 0.2s; box-shadow:0 4px 20px rgba(212,175,55,0.3);
+}
+.start-btn:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(212,175,55,0.5); }
+.back-link {
+  margin-top:14px; color:#888; font-size:0.75rem; cursor:pointer;
+  text-decoration:underline; letter-spacing:1px;
+}
+.back-link:hover { color:#ccc; }
+
+/* ===================== GAME SCREEN ===================== */
+#screen-game {
+  padding:12px 10px;
+  flex-direction:column;
+  align-items:center;
+}
+
+.game-header {
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; max-width:760px; margin-bottom:8px; flex-wrap:wrap; gap:8px;
+}
+
+.game-title-small {
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(0.85rem,3vw,1.2rem);
+  color:var(--gold);
+  text-shadow:0 0 10px rgba(212,175,55,0.4);
+}
+
+.exit-btn {
+  background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2);
+  color:#aaa; padding:5px 14px; border-radius:8px; cursor:pointer;
+  font-size:0.75rem; font-family:'Raleway',sans-serif;
+  transition:all 0.2s;
+}
+.exit-btn:hover { color:#fff; border-color:#fff; }
+
+/* Board */
+.board-wrapper {
+  border-radius:6px; padding:5px;
+  box-shadow:0 0 0 3px var(--gold), 0 0 0 6px rgba(0,0,0,0.5), 0 10px 40px rgba(0,0,0,0.6);
+  max-width:660px; width:100%;
+}
+
+.board {
+  display:grid;
+  grid-template-columns: 64px repeat(9,1fr) 64px;
+  grid-template-rows: 64px repeat(9,1fr) 64px;
+  width:100%; aspect-ratio:1;
+  border:2px solid #6b3a00;
+}
+
+.cell {
+  border:1px solid rgba(100,60,0,0.4);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; font-size:0.35rem;
+  padding:1px; cursor:pointer; overflow:hidden;
+  transition:filter 0.15s; position:relative;
+}
+.cell:hover { filter:brightness(1.12); }
+
+.city-name { font-size:0.38rem; font-weight:700; color:#111; line-height:1.1; }
+.price { font-size:0.3rem; color:#555; margin-top:1px; }
+.color-bar { width:100%; height:7px; flex-shrink:0; }
+
+.corner {
+  font-family:'Playfair Display',serif; color:#4a2000;
+  flex-direction:column; gap:1px;
+}
+.corner .ci { font-size:1.1rem; }
+.corner .cl { font-size:0.3rem; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; text-align:center; line-height:1.2; }
+.corner .cs { font-size:0.26rem; color:#888; }
+
+.chance-cell { background:#FFF9C4; }
+.community-cell { background:#E8F5E9; }
+.tax-cell { background:#FFEBEE; }
+.transport-cell { background:#EDE7F6; }
+.utility-cell { background:#F3E5F5; }
+
+.center {
+  grid-column:2/11; grid-row:2/11;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:4px; border:2px solid #6b3a00;
+  position:relative; overflow:hidden;
+}
+.center-title {
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(0.7rem,2.5vw,1.5rem);
+  color:#fff;
+  text-shadow:1px 1px 8px rgba(0,0,0,0.6);
+  letter-spacing:3px; position:relative; z-index:1;
+}
+.center-sub {
+  font-size:clamp(0.35rem,1vw,0.65rem);
+  letter-spacing:2px; font-style:italic; position:relative; z-index:1;
+}
+.center-emoji { font-size:clamp(1.5rem,5vw,3.5rem); position:relative; z-index:1; }
+.center-desc {
+  font-size:clamp(0.3rem,0.8vw,0.55rem);
+  text-align:center; max-width:80%; line-height:1.5;
+  position:relative; z-index:1;
+}
+
+/* Tokens on board */
+.cell-tokens { display:flex; flex-wrap:wrap; gap:1px; justify-content:center; position:absolute; bottom:1px; }
+.token-dot {
+  width:7px; height:7px; border-radius:50%;
+  border:1px solid rgba(0,0,0,0.4);
+  font-size:0; display:inline-block;
+}
+
+.left-cell { writing-mode:vertical-rl; transform:rotate(180deg); }
+.right-cell { writing-mode:vertical-rl; }
+
+/* ===================== PLAYER PANEL ===================== */
+.player-panel {
+  max-width:660px; width:100%;
+  display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; justify-content:center;
+}
+
+.player-card {
+  background:rgba(255,255,255,0.07);
+  border:2px solid rgba(255,255,255,0.1);
+  border-radius:12px; padding:10px 14px;
+  flex:1; min-width:130px; max-width:180px;
+  transition:all 0.3s; position:relative;
+}
+.player-card.active-turn {
+  border-color:var(--gold);
+  box-shadow:0 0 16px rgba(212,175,55,0.4);
+  background:rgba(212,175,55,0.1);
+}
+.player-card .p-header { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+.player-card .p-token { font-size:1.1rem; }
+.player-card .p-name { font-size:0.75rem; font-weight:700; color:#fff; }
+.player-card .p-money { font-size:1rem; font-weight:700; color:#4CAF50; margin-bottom:3px; }
+.player-card .p-pos { font-size:0.62rem; color:#aaa; }
+.player-card .p-props { font-size:0.6rem; color:#bbb; margin-top:3px; }
+.player-card.bankrupt { opacity:0.4; }
+.player-card.bankrupt::after {
+  content:'BANKRUPT'; position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#ff4444; font-size:0.7rem; font-weight:900; letter-spacing:2px;
+  background:rgba(0,0,0,0.5); border-radius:10px;
+}
+
+/* ===================== DICE AREA ===================== */
+.dice-area {
+  max-width:660px; width:100%;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:14px; padding:14px 18px;
+  margin-top:10px; display:flex;
+  flex-wrap:wrap; align-items:center;
+  gap:14px; justify-content:space-between;
+}
+
+.turn-info { color:#ccc; font-size:0.8rem; }
+.turn-info strong { color:#fff; font-size:0.95rem; }
+.turn-info .turn-sub { font-size:0.68rem; color:#888; margin-top:2px; }
+
+.dice-display { display:flex; gap:10px; align-items:center; }
+
+.die {
+  width:50px; height:50px; border-radius:10px;
+  background:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:2rem; box-shadow:0 4px 12px rgba(0,0,0,0.4);
+  transition:transform 0.1s;
+  user-select:none;
+}
+.die.rolling {
+  animation:diceRoll 0.6s ease;
+}
+
+@keyframes diceRoll {
+  0% { transform:rotate(0deg) scale(1); }
+  20% { transform:rotate(30deg) scale(1.2); }
+  40% { transform:rotate(-20deg) scale(0.9); }
+  60% { transform:rotate(15deg) scale(1.15); }
+  80% { transform:rotate(-10deg) scale(1.05); }
+  100% { transform:rotate(0deg) scale(1); }
+}
+
+.dice-sum {
+  font-family:'Playfair Display',serif;
+  font-size:1.6rem; color:var(--gold); font-weight:900;
+  min-width:30px; text-align:center;
+}
+
+.roll-btn {
+  padding:12px 24px; border-radius:10px;
+  background:linear-gradient(135deg,var(--gold),#b8860b);
+  color:#000; font-size:0.85rem; font-weight:700;
+  font-family:'Cinzel Decorative',serif;
+  border:none; cursor:pointer; letter-spacing:1px;
+  transition:all 0.2s; white-space:nowrap;
+  box-shadow:0 4px 16px rgba(212,175,55,0.3);
+}
+.roll-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 22px rgba(212,175,55,0.5); }
+.roll-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+.end-turn-btn {
+  padding:10px 20px; border-radius:10px;
+  background:rgba(255,255,255,0.08);
+  border:1.5px solid rgba(255,255,255,0.25);
+  color:#ccc; font-size:0.8rem; font-weight:600;
+  cursor:pointer; transition:all 0.2s; white-space:nowrap;
+}
+.end-turn-btn:hover:not(:disabled) { border-color:#fff; color:#fff; }
+.end-turn-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+/* ===================== LOG ===================== */
+.game-log {
+  max-width:660px; width:100%;
+  background:rgba(0,0,0,0.3);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:10px 14px;
+  margin-top:8px; max-height:90px; overflow-y:auto;
+}
+.log-entry { font-size:0.7rem; color:#aaa; padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.05); line-height:1.4; }
+.log-entry:last-child { color:#fff; }
+.log-entry .le-token { margin-right:4px; }
+
+/* ===================== PROPERTY POPUP ===================== */
+.popup-overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+  display:none; align-items:center; justify-content:center; z-index:100;
+  padding:20px;
+}
+.popup-overlay.open { display:flex; }
+
+.popup-box {
+  background:#1a1a2e; border:2px solid var(--gold);
+  border-radius:16px; padding:28px 24px;
+  max-width:360px; width:100%; text-align:center;
+  box-shadow:0 10px 60px rgba(0,0,0,0.8);
+  animation:popIn 0.25s ease;
+}
+
+@keyframes popIn {
+  from { transform:scale(0.85); opacity:0; }
+  to { transform:scale(1); opacity:1; }
+}
+
+.popup-color-bar {
+  width:100%; height:12px; border-radius:6px; margin-bottom:16px;
+}
+.popup-title { font-family:'Cinzel Decorative',serif; font-size:1.2rem; color:var(--gold); margin-bottom:4px; }
+.popup-sub { color:#aaa; font-size:0.75rem; margin-bottom:16px; }
+.popup-details { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
+.popup-row { display:flex; justify-content:space-between; font-size:0.8rem; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.07); }
+.popup-row span:first-child { color:#aaa; }
+.popup-row span:last-child { color:#fff; font-weight:600; }
+.popup-owner { font-size:0.75rem; color:#FFD700; margin-bottom:14px; }
+
+.popup-btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+.popup-btn {
+  padding:10px 20px; border-radius:10px;
+  font-size:0.8rem; font-weight:700; cursor:pointer;
+  border:none; font-family:'Raleway',sans-serif;
+  transition:all 0.2s;
+}
+.popup-btn.buy { background:linear-gradient(135deg,#4CAF50,#2e7d32); color:#fff; }
+.popup-btn.buy:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(76,175,80,0.4); }
+.popup-btn.close { background:rgba(255,255,255,0.1); color:#ccc; border:1px solid rgba(255,255,255,0.2); }
+.popup-btn.close:hover { color:#fff; }
+.popup-btn.pay { background:linear-gradient(135deg,#f44336,#b71c1c); color:#fff; }
+
+/* ===================== WIN SCREEN ===================== */
+.win-screen {
+  position:fixed; inset:0; background:rgba(0,0,0,0.9);
+  display:none; align-items:center; justify-content:center;
+  z-index:200; flex-direction:column; gap:16px; text-align:center; padding:24px;
+}
+.win-screen.open { display:flex; }
+.win-trophy { font-size:5rem; animation:bounce 0.8s infinite alternate; }
+@keyframes bounce { from { transform:translateY(0); } to { transform:translateY(-12px); } }
+.win-title { font-family:'Cinzel Decorative',serif; font-size:clamp(1.5rem,5vw,2.5rem); color:var(--gold); }
+.win-sub { color:#ccc; font-size:1rem; }
+.win-btn {
+  padding:14px 32px; border-radius:12px;
+  background:linear-gradient(135deg,var(--gold),#b8860b);
+  color:#000; font-size:0.95rem; font-weight:700; border:none; cursor:pointer;
+  font-family:'Cinzel Decorative',serif; letter-spacing:2px;
+  margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<!-- ========== SCREEN 1: SELECT GAME ========== -->
+<div id="screen-select" class="screen active">
+  <div class="select-title">🎲 BUSINESS BOARD GAME</div>
+  <div class="select-sub">SELECT YOUR GAME VERSION</div>
+  <div class="game-cards">
+    <div class="game-card mh" onclick="selectGame('maharashtra')">
+      <div class="card-icon">🏛️</div>
+      <div class="card-title">Maharashtra</div>
+      <div class="card-desc">Trade across Maharashtra's iconic cities from Nandurbar to Marine Drive</div>
+      <div class="card-props">22 Properties • 4 Stations • ₹ Rupees</div>
+    </div>
+    <div class="game-card in" onclick="selectGame('india')">
+      <div class="card-icon">🇮🇳</div>
+      <div class="card-title">India</div>
+      <div class="card-desc">Build an empire spanning all regions of Bharat — Kochi to Amritsar</div>
+      <div class="card-props">22 Properties • 4 Stations • ₹ Rupees</div>
+    </div>
+    <div class="game-card wl" onclick="selectGame('world')">
+      <div class="card-icon">🌍</div>
+      <div class="card-title">World</div>
+      <div class="card-desc">Conquer every continent from Lagos to Manhattan, Tokyo to Paris</div>
+      <div class="card-props">22 Properties • 4 Airports • $ Dollars</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 2: PLAYER SETUP ========== -->
+<div id="screen-setup" class="screen">
+  <div class="setup-box">
+    <div class="setup-title" id="setup-game-title"></div>
+    <div class="setup-subtitle">PLAYER SETUP</div>
+
+    <div class="section-label">Number of Players</div>
+    <div class="player-count-row">
+      <button class="player-btn" onclick="setPlayerCount(2)">2<span>Players</span></button>
+      <button class="player-btn" onclick="setPlayerCount(3)">3<span>Players</span></button>
+      <button class="player-btn" onclick="setPlayerCount(4)">4<span>Players</span></button>
+      <button class="player-btn" onclick="setPlayerCount(5)">5<span>Players</span></button>
+      <button class="player-btn" onclick="setPlayerCount(6)">6<span>Players</span></button>
+    </div>
+
+    <div class="section-label">Player Names & Tokens</div>
+    <div class="player-names" id="player-names-container"></div>
+
+    <button class="start-btn" onclick="startGame()">🎲 START GAME</button>
+    <div class="back-link" onclick="goBack('screen-select')">← Back to Game Selection</div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 3: GAME BOARD ========== -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="game-title-small" id="game-title-bar"></div>
+    <div style="display:flex;gap:8px">
+      <button class="exit-btn" onclick="goBack('screen-select')">🏠 Menu</button>
+    </div>
+  </div>
+
+  <div class="board-wrapper" id="board-wrapper">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="player-panel" id="player-panel"></div>
+
+  <div class="dice-area">
+    <div class="turn-info">
+      <div>Turn: <strong id="turn-player-name">—</strong></div>
+      <div class="turn-sub" id="turn-sub-text">Roll the dice to move!</div>
+    </div>
+    <div class="dice-display">
+      <div class="die" id="die1">⚀</div>
+      <div class="die" id="die2">⚀</div>
+      <div class="dice-sum" id="dice-sum">—</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="roll-btn" id="roll-btn" onclick="rollDice()">🎲 ROLL</button>
+      <button class="end-turn-btn" id="end-turn-btn" onclick="endTurn()" disabled>Next Turn →</button>
+    </div>
+  </div>
+
+  <div class="game-log" id="game-log">
+    <div class="log-entry">🎮 Game started! Good luck to all players.</div>
+  </div>
+</div>
+
+<!-- ========== PROPERTY POPUP ========== -->
+<div class="popup-overlay" id="popup-overlay">
+  <div class="popup-box">
+    <div class="popup-color-bar" id="popup-color-bar"></div>
+    <div class="popup-title" id="popup-title"></div>
+    <div class="popup-sub" id="popup-sub"></div>
+    <div class="popup-details" id="popup-details"></div>
+    <div class="popup-owner" id="popup-owner"></div>
+    <div class="popup-btns" id="popup-btns"></div>
+  </div>
+</div>
+
+<!-- ========== WIN SCREEN ========== -->
+<div class="win-screen" id="win-screen">
+  <div class="win-trophy">🏆</div>
+  <div class="win-title" id="win-title">Player Wins!</div>
+  <div class="win-sub" id="win-sub"></div>
+  <button class="win-btn" onclick="restartGame()">Play Again</button>
+</div>
+
+<script>
+// ======================================================
+// DATA
+// ======================================================
+const TOKENS = ['🚗','🎩','👟','🐶','🚂','⭐','🦁','💎'];
+const PLAYER_COLORS = ['#FF4444','#4488FF','#44CC44','#FFB300','#AA44FF','#FF44AA'];
+
+const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+const GAMES = {
+  maharashtra: {
+    name:'Maharashtra Business',
+    sub:'महाराष्ट्र व्यापार खेळ',
+    emoji:'🏛️',
+    currency:'₹',
+    startMoney:15000,
+    salary:2000,
+    boardBg:'#FFF3D4',
+    boardBorder:'#8B4513',
+    centerBg:'linear-gradient(135deg,#FF9933,#FFD700 50%,#138808)',
+    centerTextColor:'#fff',
+    bodyBg:'linear-gradient(135deg,#FF9933 0%,#FF6600 20%,#138808 80%,#0a5c05 100%)',
+    wrapperBg:'#FFF3D4',
+    groups:{
+      c1:{color:'#6C2D91',name:'Nandurbar-Dhule'},c2:{color:'#87CEEB',name:'Jalgaon Area'},
+      c3:{color:'#FF69B4',name:'Kolhapur Belt'},c4:{color:'#FF9933',name:'Vidarbha West'},
+      c5:{color:'#C0392B',name:'Marathwada'},c6:{color:'#FFD700',name:'Vidarbha East'},
+      c7:{color:'#138808',name:'Mumbai Suburb'},c8:{color:'#000080',name:'Prime Mumbai'}
+    },
+    cells:[
+      // BOTTOM (left to right, row 11)
+      {type:'corner',label:'REST HOUSE',icon:'🏠',sub:'Collect ₹2000',pos:0},
+      {type:'prop',name:'Nandurbar',price:600,rent:60,group:'c1',pos:1},
+      {type:'community',label:'Community Chest',icon:'📦',pos:2},
+      {type:'prop',name:'Dhule',price:600,rent:60,group:'c1',pos:3},
+      {type:'tax',label:'Income Tax',icon:'📋',sub:'₹2000',amount:2000,pos:4},
+      {type:'transport',name:'Nashik Station',icon:'🚉',price:2000,rent:500,pos:5},
+      {type:'prop',name:'Jalgaon',price:1000,rent:100,group:'c2',pos:6},
+      {type:'chance',label:'Chance',icon:'❓',pos:7},
+      {type:'prop',name:'Ahmednagar',price:1000,rent:100,group:'c2',pos:8},
+      {type:'prop',name:'Malegaon',price:1200,rent:120,group:'c2',pos:9},
+      {type:'corner',label:'CLUB',icon:'🎰',sub:'Just Visiting',pos:10},
+      // RIGHT (bottom to top, col 11) pos 11-19
+      {type:'prop',name:'Kolhapur',price:1400,rent:140,group:'c3',pos:11},
+      {type:'community',label:'Community Chest',icon:'📦',pos:12},
+      {type:'prop',name:'Sangli',price:1400,rent:140,group:'c3',pos:13},
+      {type:'prop',name:'Solapur',price:1600,rent:160,group:'c3',pos:14},
+      {type:'transport',name:'Aurangabad Stn',icon:'🚉',price:2000,rent:500,pos:15},
+      {type:'prop',name:'Amravati',price:1800,rent:180,group:'c4',pos:16},
+      {type:'chance',label:'Chance',icon:'❓',pos:17},
+      {type:'prop',name:'Akola',price:1800,rent:180,group:'c4',pos:18},
+      {type:'prop',name:'Yavatmal',price:2000,rent:200,group:'c4',pos:19},
+      // TOP (right to left, row 1) pos 20-30
+      {type:'corner',label:'FREE PARKING',icon:'🅿️',sub:'Free!',pos:20},
+      {type:'prop',name:'Latur',price:2200,rent:220,group:'c5',pos:21},
+      {type:'chance',label:'Chance',icon:'❓',pos:22},
+      {type:'prop',name:'Osmanabad',price:2200,rent:220,group:'c5',pos:23},
+      {type:'prop',name:'Nanded',price:2400,rent:240,group:'c5',pos:24},
+      {type:'transport',name:'Nagpur Station',icon:'🚉',price:2000,rent:500,pos:25},
+      {type:'prop',name:'Chandrapur',price:2600,rent:260,group:'c6',pos:26},
+      {type:'prop',name:'Gadchiroli',price:2600,rent:260,group:'c6',pos:27},
+      {type:'utility',name:'MSEDCL',icon:'⚡',price:1500,rent:300,pos:28},
+      {type:'prop',name:'Gondia',price:2800,rent:280,group:'c6',pos:29},
+      {type:'corner',label:'GO TO CLUB',icon:'👮',sub:'Fine ₹500',pos:30},
+      // LEFT (top to bottom, col 1) pos 31-39
+      {type:'prop',name:'Thane',price:3000,rent:300,group:'c7',pos:31},
+      {type:'prop',name:'Navi Mumbai',price:3000,rent:300,group:'c7',pos:32},
+      {type:'community',label:'Community Chest',icon:'📦',pos:33},
+      {type:'prop',name:'Kalyan',price:3200,rent:320,group:'c7',pos:34},
+      {type:'tax',label:'Luxury Tax',icon:'💎',sub:'₹750',amount:750,pos:35},
+      {type:'transport',name:'Pune Station',icon:'🚉',price:2000,rent:500,pos:36},
+      {type:'chance',label:'Chance',icon:'❓',pos:37},
+      {type:'prop',name:'Bandra',price:3500,rent:350,group:'c8',pos:38},
+      {type:'utility',name:'Water Board',icon:'💧',price:1500,rent:300,pos:39},
+      {type:'prop',name:'Marine Drive',price:4000,rent:400,group:'c8',pos:40},
+    ]
+  },
+  india: {
+    name:'India Business',
+    sub:'भारत व्यापार खेल',
+    emoji:'🇮🇳',
+    currency:'₹',
+    startMoney:15000,
+    salary:2000,
+    boardBg:'#FFF8E1',
+    boardBorder:'#7B3F00',
+    centerBg:'linear-gradient(135deg,#FF6600,#FFD700 35%,#138808 65%,#0a0a5e)',
+    centerTextColor:'#fff',
+    bodyBg:'radial-gradient(ellipse at top,#FF6600 0%,#c44000 40%,#0a0a5e 100%)',
+    wrapperBg:'#FFF8E1',
+    groups:{
+      c1:{color:'#9C27B0',name:'Bihar-Odisha'},c2:{color:'#00BCD4',name:'North India'},
+      c3:{color:'#E91E63',name:'South India'},c4:{color:'#FF5722',name:'Central India'},
+      c5:{color:'#F44336',name:'West India'},c6:{color:'#FFC107',name:'East-North'},
+      c7:{color:'#4CAF50',name:'Mumbai Metro'},c8:{color:'#1565C0',name:'New Delhi Prime'}
+    },
+    cells:[
+      {type:'corner',label:'REST HOUSE',icon:'🏠',sub:'Collect ₹2000',pos:0},
+      {type:'prop',name:'Patna',price:600,rent:60,group:'c1',pos:1},
+      {type:'community',label:'Community Chest',icon:'📦',pos:2},
+      {type:'prop',name:'Bhubaneswar',price:600,rent:60,group:'c1',pos:3},
+      {type:'tax',label:'Income Tax',icon:'📋',sub:'₹2000',amount:2000,pos:4},
+      {type:'transport',name:'Howrah Station',icon:'🚉',price:2000,rent:500,pos:5},
+      {type:'prop',name:'Jaipur',price:1000,rent:100,group:'c2',pos:6},
+      {type:'chance',label:'Chance',icon:'❓',pos:7},
+      {type:'prop',name:'Lucknow',price:1000,rent:100,group:'c2',pos:8},
+      {type:'prop',name:'Bhopal',price:1200,rent:120,group:'c2',pos:9},
+      {type:'corner',label:'CLUB',icon:'🎰',sub:'Just Visiting',pos:10},
+      {type:'prop',name:'Kochi',price:1400,rent:140,group:'c3',pos:11},
+      {type:'community',label:'Community Chest',icon:'📦',pos:12},
+      {type:'prop',name:'Coimbatore',price:1400,rent:140,group:'c3',pos:13},
+      {type:'prop',name:'Visakhapatnam',price:1600,rent:160,group:'c3',pos:14},
+      {type:'transport',name:'Chennai Station',icon:'🚉',price:2000,rent:500,pos:15},
+      {type:'prop',name:'Indore',price:1800,rent:180,group:'c4',pos:16},
+      {type:'chance',label:'Chance',icon:'❓',pos:17},
+      {type:'prop',name:'Nagpur',price:1800,rent:180,group:'c4',pos:18},
+      {type:'prop',name:'Pune',price:2000,rent:200,group:'c4',pos:19},
+      {type:'corner',label:'FREE PARKING',icon:'🅿️',sub:'Free!',pos:20},
+      {type:'prop',name:'Surat',price:2200,rent:220,group:'c5',pos:21},
+      {type:'chance',label:'Chance',icon:'❓',pos:22},
+      {type:'prop',name:'Ahmedabad',price:2200,rent:220,group:'c5',pos:23},
+      {type:'prop',name:'Hyderabad',price:2400,rent:240,group:'c5',pos:24},
+      {type:'transport',name:'New Delhi Stn',icon:'🚉',price:2000,rent:500,pos:25},
+      {type:'prop',name:'Kolkata',price:2600,rent:260,group:'c6',pos:26},
+      {type:'prop',name:'Chandigarh',price:2600,rent:260,group:'c6',pos:27},
+      {type:'utility',name:'NTPC Power',icon:'⚡',price:1500,rent:300,pos:28},
+      {type:'prop',name:'Amritsar',price:2800,rent:280,group:'c6',pos:29},
+      {type:'corner',label:'GO TO CLUB',icon:'👮',sub:'Fine ₹500',pos:30},
+      {type:'prop',name:'Bengaluru',price:3000,rent:300,group:'c7',pos:31},
+      {type:'prop',name:'Navi Mumbai',price:3000,rent:300,group:'c7',pos:32},
+      {type:'community',label:'Community Chest',icon:'📦',pos:33},
+      {type:'prop',name:'Thane',price:3200,rent:320,group:'c7',pos:34},
+      {type:'tax',label:'Luxury Tax',icon:'💎',sub:'₹750',amount:750,pos:35},
+      {type:'transport',name:'Mumbai Central',icon:'🚉',price:2000,rent:500,pos:36},
+      {type:'chance',label:'Chance',icon:'❓',pos:37},
+      {type:'prop',name:'Connaught Place',price:3500,rent:350,group:'c8',pos:38},
+      {type:'utility',name:'BSNL Telecom',icon:'📡',price:1500,rent:300,pos:39},
+      {type:'prop',name:'Marine Drive',price:4000,rent:400,group:'c8',pos:40},
+    ]
+  },
+  world: {
+    name:'World Business',
+    sub:'Global Trade Empire',
+    emoji:'🌍',
+    currency:'$',
+    startMoney:15000,
+    salary:2000,
+    boardBg:'#F5F0E8',
+    boardBorder:'#2C1810',
+    centerBg:'linear-gradient(135deg,#0a1628,#1a3a6e 50%,#0d2a1a)',
+    centerTextColor:'#D4AF37',
+    bodyBg:'radial-gradient(ellipse at center,#0d2137 0%,#060e1a 70%)',
+    wrapperBg:'#F5F0E8',
+    groups:{
+      c1:{color:'#8B4513',name:'Africa'},c2:{color:'#FF6B35',name:'South Asia'},
+      c3:{color:'#FF1493',name:'SE Asia'},c4:{color:'#DC143C',name:'East Asia'},
+      c5:{color:'#DAA520',name:'Middle East'},c6:{color:'#4169E1',name:'Europe'},
+      c7:{color:'#2E8B57',name:'Americas'},c8:{color:'#1a1a2e',name:'Prime Cities'}
+    },
+    cells:[
+      {type:'corner',label:'REST HOUSE',icon:'🏠',sub:'Collect $2000',pos:0},
+      {type:'prop',name:'Lagos 🇳🇬',price:600,rent:60,group:'c1',pos:1},
+      {type:'community',label:'Community Chest',icon:'📦',pos:2},
+      {type:'prop',name:'Cairo 🇪🇬',price:600,rent:60,group:'c1',pos:3},
+      {type:'tax',label:'Import Tax',icon:'📋',sub:'$2000',amount:2000,pos:4},
+      {type:'transport',name:'Singapore Air',icon:'✈️',price:2000,rent:500,pos:5},
+      {type:'prop',name:'Mumbai 🇮🇳',price:1000,rent:100,group:'c2',pos:6},
+      {type:'chance',label:'Chance',icon:'❓',pos:7},
+      {type:'prop',name:'Delhi 🇮🇳',price:1000,rent:100,group:'c2',pos:8},
+      {type:'prop',name:'Karachi 🇵🇰',price:1200,rent:120,group:'c2',pos:9},
+      {type:'corner',label:'CLUB',icon:'🎰',sub:'Just Visiting',pos:10},
+      {type:'prop',name:'Bangkok 🇹🇭',price:1400,rent:140,group:'c3',pos:11},
+      {type:'community',label:'Community Chest',icon:'📦',pos:12},
+      {type:'prop',name:'Ho Chi Minh 🇻🇳',price:1400,rent:140,group:'c3',pos:13},
+      {type:'prop',name:'Jakarta 🇮🇩',price:1600,rent:160,group:'c3',pos:14},
+      {type:'transport',name:'Dubai Airport',icon:'✈️',price:2000,rent:500,pos:15},
+      {type:'prop',name:'Seoul 🇰🇷',price:1800,rent:180,group:'c4',pos:16},
+      {type:'chance',label:'Chance',icon:'❓',pos:17},
+      {type:'prop',name:'Shanghai 🇨🇳',price:1800,rent:180,group:'c4',pos:18},
+      {type:'prop',name:'Tokyo 🇯🇵',price:2000,rent:200,group:'c4',pos:19},
+      {type:'corner',label:'FREE PARKING',icon:'🅿️',sub:'Free!',pos:20},
+      {type:'prop',name:'Riyadh 🇸🇦',price:2200,rent:220,group:'c5',pos:21},
+      {type:'chance',label:'Chance',icon:'❓',pos:22},
+      {type:'prop',name:'Dubai 🇦🇪',price:2200,rent:220,group:'c5',pos:23},
+      {type:'prop',name:'Istanbul 🇹🇷',price:2400,rent:240,group:'c5',pos:24},
+      {type:'transport',name:'London Heathrow',icon:'✈️',price:2000,rent:500,pos:25},
+      {type:'prop',name:'Frankfurt 🇩🇪',price:2600,rent:260,group:'c6',pos:26},
+      {type:'prop',name:'Paris 🇫🇷',price:2600,rent:260,group:'c6',pos:27},
+      {type:'utility',name:'Global Telecom',icon:'📡',price:1500,rent:300,pos:28},
+      {type:'prop',name:'Zurich 🇨🇭',price:2800,rent:280,group:'c6',pos:29},
+      {type:'corner',label:'GO TO CLUB',icon:'👮',sub:'Fine $500',pos:30},
+      {type:'prop',name:'São Paulo 🇧🇷',price:3000,rent:300,group:'c7',pos:31},
+      {type:'prop',name:'Toronto 🇨🇦',price:3000,rent:300,group:'c7',pos:32},
+      {type:'community',label:'Community Chest',icon:'📦',pos:33},
+      {type:'prop',name:'Chicago 🇺🇸',price:3200,rent:320,group:'c7',pos:34},
+      {type:'tax',label:'Luxury Tax',icon:'💎',sub:'$750',amount:750,pos:35},
+      {type:'transport',name:'JFK Airport',icon:'✈️',price:2000,rent:500,pos:36},
+      {type:'chance',label:'Chance',icon:'❓',pos:37},
+      {type:'prop',name:'Los Angeles 🇺🇸',price:3500,rent:350,group:'c8',pos:38},
+      {type:'utility',name:'World Finance',icon:'💰',price:1500,rent:300,pos:39},
+      {type:'prop',name:'Manhattan 🇺🇸',price:4000,rent:400,group:'c8',pos:40},
+    ]
+  }
+};
+
+const CHANCE_CARDS = [
+  {text:'Advance to REST HOUSE. Collect salary!', action:'goto', value:0},
+  {text:'Bank pays you dividend!', action:'gain', value:500},
+  {text:'Pay school fees!', action:'lose', value:300},
+  {text:'You won a lottery! Collect bonus.', action:'gain', value:1000},
+  {text:'Go to CLUB. Do not collect salary.', action:'goto', value:10},
+  {text:'Street repairs — pay per property.', action:'lose', value:200},
+  {text:'Advance 3 spaces forward.', action:'move', value:3},
+  {text:'Collect from each player!', action:'collect', value:100},
+];
+
+const COMMUNITY_CARDS = [
+  {text:'Bank error in your favour! Collect.', action:'gain', value:400},
+  {text:'Doctor\'s fees — pay up.', action:'lose', value:200},
+  {text:'Receive income tax refund!', action:'gain', value:300},
+  {text:'Pay hospital fees.', action:'lose', value:500},
+  {text:'Inherit from a relative!', action:'gain', value:800},
+  {text:'Insurance premium due.', action:'lose', value:150},
+  {text:'Collect your pension!', action:'gain', value:600},
+  {text:'Pay for repairs on each property.', action:'lose', value:100},
+];
+
+// ======================================================
+// STATE
+// ======================================================
+let currentGame = null;
+let players = [];
+let currentPlayerIdx = 0;
+let properties = {}; // pos -> { owner, houses }
+let hasRolled = false;
+let gameData = null;
+let playerCount = 2;
+let cellElements = {}; // pos -> DOM element
+
+// ======================================================
+// SCREEN NAV
+// ======================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goBack(screen) {
+  showScreen(screen);
+}
+
+function selectGame(gameKey) {
+  currentGame = gameKey;
+  gameData = GAMES[gameKey];
+  document.getElementById('setup-game-title').textContent = gameData.emoji + ' ' + gameData.name;
+  document.getElementById('screen-setup').style.background = gameData.bodyBg;
+  setPlayerCount(2);
+  showScreen('screen-setup');
+}
+
+// ======================================================
+// SETUP
+// ======================================================
+function setPlayerCount(n) {
+  playerCount = n;
+  document.querySelectorAll('.player-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', i + 2 === n);
+  });
+  renderNameInputs();
+}
+
+function renderNameInputs() {
+  const container = document.getElementById('player-names-container');
+  container.innerHTML = '';
+  for (let i = 0; i < playerCount; i++) {
+    const row = document.createElement('div');
+    row.className = 'player-name-row';
+    row.innerHTML = `
+      <div class="player-token">${TOKENS[i]}</div>
+      <input class="player-name-input" id="pname-${i}" type="text"
+        placeholder="Player ${i+1} name" value="Player ${i+1}" maxlength="16">
+    `;
+    container.appendChild(row);
+  }
+}
+
+function startGame() {
+  players = [];
+  for (let i = 0; i < playerCount; i++) {
+    const nameEl = document.getElementById(`pname-${i}`);
+    const name = nameEl.value.trim() || `Player ${i+1}`;
+    players.push({
+      idx: i,
+      name,
+      token: TOKENS[i],
+      color: PLAYER_COLORS[i],
+      money: gameData.startMoney,
+      pos: 0,
+      properties: [],
+      bankrupt: false,
+    });
+  }
+  properties = {};
+  currentPlayerIdx = 0;
+  hasRolled = false;
+
+  // Build game screen
+  document.body.style.background = gameData.bodyBg;
+  document.getElementById('screen-game').style.background = gameData.bodyBg;
+  document.getElementById('game-title-bar').textContent = gameData.emoji + ' ' + gameData.name;
+  document.getElementById('board-wrapper').style.background = gameData.wrapperBg;
+  document.getElementById('board-wrapper').style.borderColor = gameData.boardBorder;
+
+  buildBoard();
+  renderPlayerPanel();
+  updateTurnUI();
+  clearLog();
+  addLog(`🎮 Game started! ${players.length} players. Good luck!`);
+
+  document.getElementById('roll-btn').disabled = false;
+  document.getElementById('end-turn-btn').disabled = true;
+
+  showScreen('screen-game');
+}
+
+// ======================================================
+// BOARD BUILD
+// ======================================================
+function posToGrid(pos) {
+  // pos 0-10: bottom row (left to right), col 1-11, row 11
+  // pos 11-19: right col (bottom to top), col 11, row 10-2
+  // pos 20-30: top row (right to left), col 11-1, row 1
+  // pos 31-39: left col (top to bottom), col 1, row 2-10
+  // pos 40: also left col row 11 col 1 — same as pos 0
+  if (pos <= 10) return { row:11, col: pos+1, rot:'' };
+  if (pos <= 19) return { row: 10-(pos-11), col:11, rot:'right-cell' };
+  if (pos <= 30) return { row:1, col: 11-(pos-20), rot:'' };
+  return { row: (pos-30)+1, col:1, rot:'left-cell' };
+}
+
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  board.style.background = gameData.boardBg;
+  board.style.borderColor = gameData.boardBorder;
+  cellElements = {};
+
+  gameData.cells.forEach(cell => {
+    const {row, col, rot} = posToGrid(cell.pos);
+    const div = makeCellEl(cell, rot);
+    div.style.gridRow = row;
+    div.style.gridColumn = col;
+    div.dataset.pos = cell.pos;
+    div.addEventListener('click', () => onCellClick(cell.pos));
+    board.appendChild(div);
+    cellElements[cell.pos] = div;
+  });
+
+  // Center
+  const center = document.createElement('div');
+  center.className = 'center';
+  center.style.gridRow = '2/11';
+  center.style.gridColumn = '2/11';
+  center.style.background = gameData.centerBg;
+  center.innerHTML = `
+    <div class="center-emoji">${gameData.emoji}</div>
+    <div class="center-title" style="color:${gameData.centerTextColor}">${gameData.name.toUpperCase()}</div>
+    <div class="center-sub" style="color:${gameData.centerTextColor};opacity:0.8">${gameData.sub}</div>
+  `;
+  board.appendChild(center);
+
+  renderAllTokens();
+}
+
+function makeCellEl(cell, rot) {
+  const div = document.createElement('div');
+  div.className = 'cell';
+  if (rot) div.classList.add(rot);
+
+  const g = gameData.groups;
+  const grpColor = cell.group ? g[cell.group].color : null;
+
+  if (cell.type === 'corner') {
+    div.classList.add('corner');
+    div.style.background = gameData.boardBg;
+    div.innerHTML = `<div class="ci">${cell.icon}</div><div class="cl">${cell.label}</div><div class="cs">${cell.sub||''}</div>`;
+  } else if (cell.type === 'prop') {
+    div.innerHTML = `<div class="color-bar" style="background:${grpColor}"></div><div class="city-name">${cell.name}</div><div class="price">${gameData.currency}${cell.price}</div>`;
+  } else if (cell.type === 'chance') {
+    div.classList.add('chance-cell');
+    div.innerHTML = `<div style="font-size:1rem">${cell.icon}</div><div class="city-name">${cell.label}</div>`;
+  } else if (cell.type === 'community') {
+    div.classList.add('community-cell');
+    div.innerHTML = `<div style="font-size:1rem">${cell.icon}</div><div class="city-name">${cell.label}</div>`;
+  } else if (cell.type === 'tax') {
+    div.classList.add('tax-cell');
+    div.innerHTML = `<div style="font-size:1rem">${cell.icon}</div><div class="city-name">${cell.label}</div><div class="price">${cell.sub}</div>`;
+  } else if (cell.type === 'transport') {
+    div.classList.add('transport-cell');
+    div.innerHTML = `<div style="font-size:1rem">${cell.icon}</div><div class="city-name">${cell.name}</div><div class="price">${gameData.currency}${cell.price}</div>`;
+  } else if (cell.type === 'utility') {
+    div.classList.add('utility-cell');
+    div.innerHTML = `<div style="font-size:1rem">${cell.icon}</div><div class="city-name">${cell.name}</div><div class="price">${gameData.currency}${cell.price}</div>`;
+  }
+  return div;
+}
+
+// ======================================================
+// TOKENS
+// ======================================================
+function renderAllTokens() {
+  // Clear existing token overlays
+  document.querySelectorAll('.cell-tokens').forEach(e => e.remove());
+
+  // Group players by position
+  const byPos = {};
+  players.forEach(p => {
+    if (!byPos[p.pos]) byPos[p.pos] = [];
+    byPos[p.pos].push(p);
+  });
+
+  Object.entries(byPos).forEach(([pos, ps]) => {
+    const cell = cellElements[pos];
+    if (!cell) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'cell-tokens';
+    ps.forEach(p => {
+      const dot = document.createElement('span');
+      dot.className = 'token-dot';
+      dot.style.background = p.color;
+      dot.title = p.name;
+      wrap.appendChild(dot);
+    });
+    cell.appendChild(wrap);
+  });
+}
+
+// ======================================================
+// DICE
+// ======================================================
+function rollDice() {
+  if (hasRolled) return;
+  hasRolled = true;
+  document.getElementById('roll-btn').disabled = true;
+
+  const d1 = document.getElementById('die1');
+  const d2 = document.getElementById('die2');
+
+  d1.classList.add('rolling');
+  d2.classList.add('rolling');
+
+  let flips = 0;
+  const interval = setInterval(() => {
+    d1.textContent = DICE_FACES[Math.floor(Math.random()*6)];
+    d2.textContent = DICE_FACES[Math.floor(Math.random()*6)];
+    flips++;
+    if (flips >= 8) {
+      clearInterval(interval);
+      d1.classList.remove('rolling');
+      d2.classList.remove('rolling');
+      finalizeDice();
+    }
+  }, 80);
+}
+
+function finalizeDice() {
+  const v1 = Math.floor(Math.random()*6)+1;
+  const v2 = Math.floor(Math.random()*6)+1;
+  const d1 = document.getElementById('die1');
+  const d2 = document.getElementById('die2');
+  d1.textContent = DICE_FACES[v1-1];
+  d2.textContent = DICE_FACES[v2-1];
+  document.getElementById('dice-sum').textContent = v1+v2;
+
+  const player = players[currentPlayerIdx];
+  addLog(`${player.token} ${player.name} rolled ${v1} + ${v2} = ${v1+v2}`);
+
+  movePlayer(currentPlayerIdx, v1+v2);
+}
+
+// ======================================================
+// MOVEMENT
+// ======================================================
+function movePlayer(pidx, steps) {
+  const player = players[pidx];
+  const oldPos = player.pos;
+  player.pos = (player.pos + steps) % 41;
+  if (player.pos === 0) player.pos = 0; // REST HOUSE
+
+  // Passed REST HOUSE?
+  if (player.pos < oldPos && player.pos !== 0) {
+    player.money += gameData.salary;
+    addLog(`${player.token} ${player.name} passed REST HOUSE! +${gameData.currency}${gameData.salary}`);
+  }
+
+  renderAllTokens();
+  renderPlayerPanel();
+
+  const cell = gameData.cells.find(c => c.pos === player.pos);
+  if (cell) landOn(pidx, cell);
+
+  document.getElementById('end-turn-btn').disabled = false;
+}
+
+function landOn(pidx, cell) {
+  const player = players[pidx];
+  const cur = gameData.currency;
+
+  if (cell.type === 'corner') {
+    if (cell.pos === 30) { // GO TO CLUB
+      player.money -= 500;
+      player.pos = 10;
+      renderAllTokens();
+      addLog(`${player.token} ${player.name} went to CLUB! Paid ${cur}500 fine.`);
+      renderPlayerPanel();
+    } else {
+      addLog(`${player.token} ${player.name} landed on ${cell.label}.`);
+    }
+    document.getElementById('end-turn-btn').disabled = false;
+    return;
+  }
+
+  if (cell.type === 'tax') {
+    player.money -= cell.amount;
+    addLog(`${player.token} ${player.name} paid ${cell.label}: ${cur}${cell.amount}`);
+    renderPlayerPanel();
+    checkBankruptcy(pidx);
+    document.getElementById('end-turn-btn').disabled = false;
+    return;
+  }
+
+  if (cell.type === 'chance') {
+    const card = CHANCE_CARDS[Math.floor(Math.random()*CHANCE_CARDS.length)];
+    executeCard(pidx, card);
+    return;
+  }
+
+  if (cell.type === 'community') {
+    const card = COMMUNITY_CARDS[Math.floor(Math.random()*COMMUNITY_CARDS.length)];
+    executeCard(pidx, card);
+    return;
+  }
+
+  if (cell.type === 'prop' || cell.type === 'transport' || cell.type === 'utility') {
+    const owner = properties[cell.pos];
+    if (!owner) {
+      // Available to buy — show popup
+      showBuyPopup(pidx, cell);
+    } else if (owner !== pidx) {
+      // Pay rent
+      const rent = cell.rent || Math.round(cell.price * 0.1);
+      player.money -= rent;
+      players[owner].money += rent;
+      addLog(`${player.token} ${player.name} paid rent ${cur}${rent} to ${players[owner].token} ${players[owner].name}`);
+      renderPlayerPanel();
+      checkBankruptcy(pidx);
+      document.getElementById('end-turn-btn').disabled = false;
+    } else {
+      addLog(`${player.token} ${player.name} landed on own property: ${cell.name}`);
+      document.getElementById('end-turn-btn').disabled = false;
+    }
+  }
+}
+
+function executeCard(pidx, card) {
+  const player = players[pidx];
+  const cur = gameData.currency;
+  addLog(`${player.token} ${player.name} drew a card: "${card.text}"`);
+  if (card.action === 'gain') { player.money += card.value; addLog(`   → Gained ${cur}${card.value}`); }
+  else if (card.action === 'lose') { player.money -= card.value; addLog(`   → Paid ${cur}${card.value}`); }
+  else if (card.action === 'goto') {
+    player.pos = card.value;
+    if (card.value === 0) { player.money += gameData.salary; addLog(`   → Moved to REST HOUSE, collected salary!`); }
+    else addLog(`   → Moved to position ${card.value}`);
+    renderAllTokens();
+  } else if (card.action === 'move') {
+    const oldP = player.pos;
+    player.pos = (player.pos + card.value) % 41;
+    if (player.pos < oldP) { player.money += gameData.salary; }
+    renderAllTokens();
+    addLog(`   → Moved ${card.value} spaces`);
+  } else if (card.action === 'collect') {
+    let total = 0;
+    players.forEach((p,i) => { if(i!==pidx && !p.bankrupt){ p.money -= card.value; total += card.value; } });
+    player.money += total;
+    addLog(`   → Collected ${cur}${card.value} from each player!`);
+  }
+  renderPlayerPanel();
+  checkBankruptcy(pidx);
+  document.getElementById('end-turn-btn').disabled = false;
+}
+
+// ======================================================
+// BUY POPUP
+// ======================================================
+function showBuyPopup(pidx, cell) {
+  const player = players[pidx];
+  const cur = gameData.currency;
+  const grp = cell.group ? gameData.groups[cell.group] : null;
+  const color = grp ? grp.color : '#888';
+
+  document.getElementById('popup-color-bar').style.background = color;
+  document.getElementById('popup-title').textContent = cell.name || cell.label;
+  document.getElementById('popup-sub').textContent = grp ? grp.name : (cell.type === 'transport' ? 'Transport Hub' : 'Utility');
+
+  const details = document.getElementById('popup-details');
+  details.innerHTML = `
+    <div class="popup-row"><span>Price</span><span>${cur}${cell.price}</span></div>
+    <div class="popup-row"><span>Rent</span><span>${cur}${cell.rent||Math.round(cell.price*0.1)}</span></div>
+    <div class="popup-row"><span>Your Balance</span><span style="color:${player.money>=cell.price?'#4CAF50':'#f44336'}">${cur}${player.money}</span></div>
+  `;
+  document.getElementById('popup-owner').textContent = '';
+
+  const btns = document.getElementById('popup-btns');
+  if (player.money >= cell.price) {
+    btns.innerHTML = `
+      <button class="popup-btn buy" onclick="buyProperty(${pidx},${cell.pos})">Buy ${cur}${cell.price}</button>
+      <button class="popup-btn close" onclick="closePopup()">Skip</button>
+    `;
+  } else {
+    btns.innerHTML = `
+      <button class="popup-btn close" onclick="closePopup()">Can't afford — Skip</button>
+    `;
+  }
+
+  document.getElementById('popup-overlay').classList.add('open');
+  document.getElementById('end-turn-btn').disabled = true;
+}
+
+function buyProperty(pidx, pos) {
+  const cell = gameData.cells.find(c => c.pos === pos);
+  const player = players[pidx];
+  player.money -= cell.price;
+  player.properties.push(pos);
+  properties[pos] = pidx;
+  addLog(`${player.token} ${player.name} bought ${cell.name||cell.label} for ${gameData.currency}${cell.price}!`);
+  renderPlayerPanel();
+  updateCellOwner(pos, pidx);
+  closePopup();
+  document.getElementById('end-turn-btn').disabled = false;
+}
+
+function updateCellOwner(pos, pidx) {
+  const el = cellElements[pos];
+  if (!el) return;
+  const player = players[pidx];
+  // Add a tiny owner indicator
+  let ownerEl = el.querySelector('.owner-flag');
+  if (!ownerEl) { ownerEl = document.createElement('div'); ownerEl.className='owner-flag'; el.appendChild(ownerEl); }
+  ownerEl.style.cssText = `position:absolute;top:0;right:0;width:6px;height:6px;background:${player.color};border-radius:0 0 0 4px;`;
+}
+
+function onCellClick(pos) {
+  const cell = gameData.cells.find(c => c.pos === pos);
+  if (!cell || cell.type === 'corner' || cell.type === 'chance' || cell.type === 'community' || cell.type === 'tax') return;
+  const cur = gameData.currency;
+  const owner = properties[pos] !== undefined ? properties[pos] : null;
+  const grp = cell.group ? gameData.groups[cell.group] : null;
+  const color = grp ? grp.color : '#888';
+
+  document.getElementById('popup-color-bar').style.background = color;
+  document.getElementById('popup-title').textContent = cell.name || cell.label;
+  document.getElementById('popup-sub').textContent = grp ? grp.name : (cell.type==='transport'?'Transport':'Utility');
+  const details = document.getElementById('popup-details');
+  details.innerHTML = `
+    <div class="popup-row"><span>Price</span><span>${cur}${cell.price}</span></div>
+    <div class="popup-row"><span>Rent</span><span>${cur}${cell.rent}</span></div>
+  `;
+  document.getElementById('popup-owner').textContent = owner !== null ? `Owner: ${players[owner].token} ${players[owner].name}` : 'For Sale';
+  document.getElementById('popup-btns').innerHTML = `<button class="popup-btn close" onclick="closePopup()">Close</button>`;
+  document.getElementById('popup-overlay').classList.add('open');
+}
+
+function closePopup() {
+  document.getElementById('popup-overlay').classList.remove('open');
+}
+
+// ======================================================
+// TURN MANAGEMENT
+// ======================================================
+function endTurn() {
+  hasRolled = false;
+  document.getElementById('end-turn-btn').disabled = true;
+  document.getElementById('roll-btn').disabled = false;
+  document.getElementById('dice-sum').textContent = '—';
+
+  // Next alive player
+  let next = (currentPlayerIdx + 1) % players.length;
+  let attempts = 0;
+  while (players[next].bankrupt && attempts < players.length) {
+    next = (next + 1) % players.length;
+    attempts++;
+  }
+  currentPlayerIdx = next;
+  updateTurnUI();
+}
+
+function updateTurnUI() {
+  const player = players[currentPlayerIdx];
+  document.getElementById('turn-player-name').textContent = `${player.token} ${player.name}`;
+  document.getElementById('turn-sub-text').textContent = `Balance: ${gameData.currency}${player.money.toLocaleString()} • Position: ${player.pos}`;
+
+  document.querySelectorAll('.player-card').forEach((c, i) => {
+    c.classList.toggle('active-turn', i === currentPlayerIdx);
+  });
+}
+
+// ======================================================
+// BANKRUPTCY
+// ======================================================
+function checkBankruptcy(pidx) {
+  const player = players[pidx];
+  if (player.money < 0) {
+    player.bankrupt = true;
+    addLog(`💀 ${player.token} ${player.name} is BANKRUPT!`);
+    renderPlayerPanel();
+
+    // Free their properties
+    Object.keys(properties).forEach(pos => {
+      if (properties[pos] === pidx) delete properties[pos];
+    });
+    player.properties = [];
+
+    // Check win condition
+    const alive = players.filter(p => !p.bankrupt);
+    if (alive.length === 1) {
+      showWin(alive[0]);
+    }
+  }
+}
+
+function showWin(player) {
+  document.getElementById('win-title').textContent = `${player.token} ${player.name} Wins! 🎉`;
+  document.getElementById('win-sub').textContent = `Congratulations! All other players are bankrupt.`;
+  document.getElementById('win-screen').classList.add('open');
+}
+
+function restartGame() {
+  document.getElementById('win-screen').classList.remove('open');
+  showScreen('screen-select');
+}
+
+// ======================================================
+// PLAYER PANEL
+// ======================================================
+function renderPlayerPanel() {
+  const panel = document.getElementById('player-panel');
+  panel.innerHTML = '';
+  players.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = `player-card${i===currentPlayerIdx?' active-turn':''}${p.bankrupt?' bankrupt':''}`;
+    const propCount = p.properties.length;
+    card.innerHTML = `
+      <div class="p-header">
+        <div class="p-token">${p.token}</div>
+        <div class="p-name" style="color:${p.color}">${p.name}</div>
+      </div>
+      <div class="p-money">${gameData.currency}${p.money.toLocaleString()}</div>
+      <div class="p-pos">Position: ${p.pos}</div>
+      <div class="p-props">🏠 ${propCount} propert${propCount===1?'y':'ies'}</div>
+    `;
+    panel.appendChild(card);
+  });
+}
+
+// ======================================================
+// LOG
+// ======================================================
+function addLog(msg) {
+  const log = document.getElementById('game-log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.textContent = msg;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('game-log').innerHTML = '';
+}
+
+// ======================================================
+// INIT
+// ======================================================
+setPlayerCount(2);
+</script>
+</body>
+</html>
